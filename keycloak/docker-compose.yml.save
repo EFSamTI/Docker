@@ -1,0 +1,62 @@
+x-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    container_name: pg4kc
+    build:
+      context: ./postgres
+      args:
+        - PG_VERSION=${POSTGRES_VERSION}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "keycloak"]
+    environment:
+      # PG_VERSION: 
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - /opt/kc_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    logging: *logging
+  keycloak:
+    container_name: identity
+    build:
+      context: .
+      args:
+        - KC_VERSION=${KC_VERSION}
+    command: ["start", "--import-realm", "--optimized", "--hostname=integrador.eurofish.com.ec"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+    environment:
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_DB: postgres
+      KC_DB_ADDR: postgres
+      KC_DB_DATABASE: keycloak
+      KC_DB_SCHEMA: public
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      # KC_DB_URL: "jdbc:postgresql://postgres:5432/keycloak"
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+      KC_LOG_LEVEL: ${KC_LOG_LEVEL}
+      KC_REALM_NAME: ${KC_REALM_NAME}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      GF_URL: ${GF_HOSTNAME}:${GF_SERVER_HTTP_PORT}
+      GF_ADMIN_USERNAME: ${GF_ADMIN_USERNAME}
+      GF_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
+    ports:
+      - ${KC_PORT}:8080
+      - "8443:8443"
+    volumes:
+      - .realm.json:/opt/keycloak/data/import/realm.json:ro
+    logging: *logging

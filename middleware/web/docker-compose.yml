@@ -1,0 +1,16 @@
+services:
+  angular:
+    container_name: web-admin
+    build:
+      context: .
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - AUTHOTITY=${AUTHOTITY}
+      - REDIRECT_URL=${REDIRECT_URL}
+      - POST_LOGOUT_REDIRECT_URL=${POST_LOGOUT_REDIRECT_URL}
+      - REALM=${REALM}
+      - CLIENT_ID=${CLIENT_ID}
+      - API_URL=${API_URL}

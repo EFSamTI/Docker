@@ -1,0 +1,8 @@
+services:
+  dummy:
+    container_name: for-dummies
+    build:
+      context: .
+      dockerfile: Dockerfile.jvm
+    ports:
+      - "8093:8093"

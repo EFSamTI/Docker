@@ -1,0 +1,11 @@
+services:
+  dynamic-view:
+    build:
+      context: .
+    environment:
+      - APP_LOG_PATH=app.log
+      - PG_USERNAME=${PG_USERNAME}
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_URL=${PG_URL}
+    ports:
+      - "8002:8002"

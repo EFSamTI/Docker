@@ -1,0 +1,14 @@
+version: '3.1'
+
+services:
+  postgres12:
+    container_name: pg12
+    build:
+      context: ./database
+      args:
+        - PG_VERSION=${PG_VERSION}
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: ${PG_PASSWORD}

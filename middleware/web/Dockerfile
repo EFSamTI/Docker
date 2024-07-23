@@ -1,0 +1,8 @@
+FROM nginx
+
+COPY nginx.conf /etc/nginx/conf.d/nginx.conf
+COPY /certs /etc/nginx/certs
+COPY middleware-admin /etc/nginx/html
+
+EXPOSE 80
+EXPOSE 443

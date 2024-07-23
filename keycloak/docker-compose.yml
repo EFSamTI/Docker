@@ -1,0 +1,170 @@
+x-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    container_name: pg4kc
+    build:
+      context: ./postgres
+      args:
+        - PG_VERSION=${POSTGRES_VERSION}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "keycloak"]
+    environment:
+      # PG_VERSION: 
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - /opt/kc_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - keycloak_network
+    logging: *logging
+  keycloak:
+    container_name: identity
+    build:
+      context: .
+      args:
+        - KC_VERSION=${KC_VERSION}
+    command: ["start", "--import-realm", "--optimized"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+    networks:
+      - keycloak_network
+    environment:
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_DB: postgres
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_DB_URL: "jdbc:postgresql://postgres:5432/keycloak"
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+      KC_LOG_LEVEL: ${KC_LOG_LEVEL}
+      KC_REALM_NAME: ${KC_REALM_NAME}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      GF_URL: ${GF_HOSTNAME}:${GF_SERVER_HTTP_PORT}
+      GF_ADMIN_USERNAME: ${GF_ADMIN_USERNAME}
+      GF_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
+    ports:
+      - ${KC_PORT}:8443
+      # - "8443:8443"
+    volumes:
+      - .realm.json:/opt/keycloak/data/import/realm.json:ro
+    logging: *logging
+
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION}
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.wal-compression'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9090/-/healthy"
+        ]
+    ports:
+      - ${PROMETHEUS_PORT}:9090
+    networks:
+      - keycloak_network
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - cadvisor
+    logging: *logging
+
+  grafana:
+    build:
+      context: ./grafana
+      args:
+        - GF_VERSION=${GF_VERSION}
+    restart: unless-stopped
+    ports:
+      - ${GF_SERVER_HTTP_PORT}:${GF_SERVER_HTTP_PORT}
+    networks:
+      - keycloak_network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "http://localhost:${GF_SERVER_HTTP_PORT}/api/health"
+        ]
+    environment:
+      GF_SERVER_PROTOCOL: https
+      GF_SERVER_PORT: ${GF_SERVER_HTTP_PORT}
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USERNAME}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
+      # GF_SERVER_HTTP_PORT: ${GF_SERVER_HTTP_PORT}
+      GF_LOG_LEVEL: ${GF_LOG_LEVEL}
+    volumes:
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    logging: *logging
+
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8888:8080"
+    networks:
+      - keycloak_network
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+  elasticsearch:
+    image: elasticsearch:7.6.1
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - keycloak_network
+    environment:
+      - discovery.type=single-node
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.6.1
+    container_name: logstash
+    ports:
+      - "5000:5000"
+      - "9600:9600"
+      - "12201:12201/udp"
+    networks:
+      - keycloak_network
+    volumes:
+      - ./logstash/pipelines:/usr/share/logstash/pipeline
+    depends_on:
+      - elasticsearch
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.6.1
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    networks:
+      - keycloak_network
+    depends_on:
+      - logstash
+
+networks:
+  keycloak_network:
+    driver: bridge
