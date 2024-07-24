@@ -1,22 +1,26 @@
-# MQTT_HOST=192.168.248.245
-# MQTT_PORT=1883
-# MQTT_PASSWD=mosquitto
-# MQTT_USER=mosquitto
-# MONGO_CONN_STR=mongodb://eurofish:3uR0F15h@192.168.248.245:27017
-# MONGO_DATABASE=eurofish
-# POSTGRES_URL=postgresql://192.168.248.245:5432/eurofish
-# POSTGRES_PASSWD=3uR0F15h
-# POSTGRES_USER=postgres
-# IDENTITY_SERVER_URL='https://192.168.248.245:8443/realms/EU-AUTH-SERVER-DEV'
-# IDENTITY_CLIENT_ID='EU-BACKEND-MIDDLEWARE'
-# IDENTITY_CLIENT_SECRET='4U6v3tByuEKCOgU0GUgnkYWqLYvWpzpZ'
-# LOGSTASH_HOST=192.168.248.245
-# LOGSTASH_PORT=12201
+## Services
++ zookeeper
++ kafka-broker
++ postgres
++ keycloak
++ entities
++ core
++ dynamic-view
++ dummy
++ cadvisor
++ prometheus
++ grafana
++ elasticsearch
++ logstash
++ kibana
++ kafka-connect
+
+## .env
+```
 POSTGRES_VERSION=15.7-alpine
 
-KC_DB_PASSWORD=password
+KC_DB_PASSWORD=
 
-# releases: https://github.com/keycloak/keycloak/releases
 KC_VERSION=25.0.1
 # The link that will be used by the Grafana to redirect to the Keycloak
 #KC_HOSTNAME=https://
@@ -25,19 +29,17 @@ KC_PORT=8443
 KC_REALM_NAME=grafana
 KC_LOG_LEVEL=INFO
 KEYCLOAK_ADMIN=admin
-KEYCLOAK_ADMIN_PASSWORD=keycloak
+KEYCLOAK_ADMIN_PASSWORD=
 
-# releases: https://github.com/prometheus/prometheus/releases
 PROMETHEUS_VERSION=v2.53.0
 PROMETHEUS_PORT=9090
 
-# releases: https://github.com/grafana/grafana/releases
 GF_VERSION=11.0.0
 GF_LOG_LEVEL=info
 GF_SERVER_HTTP_PORT=3000
 GF_HOSTNAME=integrador.eurofish.com.ec
 GF_ADMIN_USERNAME=admin
-GF_ADMIN_PASSWORD=grafana
+GF_ADMIN_PASSWORD=
 
 PG_URL=postgresql://192.168.248.245:5432/eurofish
 PG_USER=postgres
@@ -46,7 +48,7 @@ MONGO_URL=mongodb://eurofish:3uR0F15h@192.168.248.245:27017
 MONGO_DB=eurofish
 MQTT_HOST=192.168.248.245
 MQTT_PORT=1883
-MQTT_PASSWD=mosquitto
+MQTT_PASSWD=
 MQTT_USER=mosquitto
 OIDC_SERVER_URL=https://integrador.eurofish.com.ec:8443/realms/EU-AUTH-SERVER-DEV
 OIDC_CLIENT_ID=EU-BACKEND-MIDDLEWARE
@@ -57,5 +59,6 @@ CERT_FILE=/deployments/certs/eurofish_com_ec.pem
 CERT_KEY=/deployments/certs/eurofish.key
 
 PG_USERNAME=bi
-PG_PASSWORD=P7atiFHi9sJBjQEC
+PG_PASSWORD=
 PG_URL=postgresql://154.38.178.139:5432/inventario
+```
