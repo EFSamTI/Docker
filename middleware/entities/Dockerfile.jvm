@@ -9,9 +9,9 @@ COPY --chown=185 quarkus-app/*.jar /deployments/
 COPY --chown=185 quarkus-app/app/ /deployments/app/
 COPY --chown=185 quarkus-app/quarkus/ /deployments/quarkus/
 
-COPY --chown=185 certs/eurofish_com_ec.pfx /deployments/certs/
-COPY --chown=185 certs/eurofish_com_ec.pem /deployments/certs/
-COPY --chown=185 certs/eurofish.key /deployments/certs/
+COPY --chown=185 ../certs/eurofish_com_ec.pfx /deployments/certs/
+COPY --chown=185 ../certs/eurofish_com_ec.pem /deployments/certs/
+COPY --chown=185 ../certs/eurofish.key /deployments/certs/
 
 EXPOSE 8091
 EXPOSE 8491

@@ -29,6 +29,57 @@ services:
       - zookeeper-container
     restart: always
 
+  postgres:
+    container_name: pg4kc
+    build:
+      context: keycloak/postgres
+      args:
+        - PG_VERSION=${POSTGRES_VERSION}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "keycloak" ]
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - /opt/kc_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  keycloak:
+    container_name: identity
+    build:
+      context: keycloak
+      args:
+        - KC_VERSION=${KC_VERSION}
+    command: [ "start", "--import-realm", "--optimized" ]
+    ports:
+      - ${KC_PORT}:8443
+      # - "8443:8443"
+    environment:
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_DB: postgres
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_DB_URL: "jdbc:postgresql://postgres:5432/keycloak"
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+      KC_LOG_LEVEL: ${KC_LOG_LEVEL}
+      KC_REALM_NAME: ${KC_REALM_NAME}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      GF_URL: ${GF_HOSTNAME}:${GF_SERVER_HTTP_PORT}
+      GF_ADMIN_USERNAME: ${GF_ADMIN_USERNAME}
+      GF_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
+    volumes:
+      - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+    restart: unless-stopped
+
   entities:
     container_name: entities
     build:
@@ -52,6 +103,7 @@ services:
       CERT_KEY: ${CERT_KEY}
     depends_on:
       - kafka-broker
+      - keycloak
     restart: unless-stopped
 
   core:
@@ -81,4 +133,159 @@ services:
       CERT_KEY: ${CERT_KEY}
     depends_on:
       - kafka-broker
+      - keycloak
     restart: unless-stopped
+
+  dynamic-view:
+    container_name: inventory
+    build:
+      context: inventory
+    ports:
+      - "8002:8002"
+    environment:
+      PG_USERNAME: ${PG_USERNAME}
+      PG_PASSWORD: ${PG_PASSWORD}
+      PG_URL: ${PG_URL}
+    depends_on:
+      - kafka-broker
+    restart: unless-stopped
+
+  dummy:
+    container_name: for-dummies
+    build:
+      context: dummy
+      dockerfile: Dockerfile.jvm
+    ports:
+      - "8093:8093"
+    depends_on:
+      - kafka-broker
+    restart: unless-stopped
+
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8888:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION}
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.wal-compression'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9090/-/healthy"
+        ]
+    ports:
+      - ${PROMETHEUS_PORT}:9090
+    volumes:
+      - ./keycloak/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - cadvisor
+    restart: unless-stopped
+
+  grafana:
+    container_name: grafana
+    build:
+      context: keycloak/grafana
+      args:
+        - GF_VERSION=${GF_VERSION}
+    restart: unless-stopped
+    ports:
+      - ${GF_SERVER_HTTP_PORT}:${GF_SERVER_HTTP_PORT}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--spider",
+          "http://localhost:${GF_SERVER_HTTP_PORT}/api/health"
+        ]
+    environment:
+      GF_SERVER_PROTOCOL: https
+      GF_SERVER_PORT: ${GF_SERVER_HTTP_PORT}
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USERNAME}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
+      # GF_SERVER_HTTP_PORT: ${GF_SERVER_HTTP_PORT}
+      GF_LOG_LEVEL: ${GF_LOG_LEVEL}
+    volumes:
+      - ./keycloak/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./keycloak/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.11.2
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+    restart: always
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.11.2
+    container_name: logstash
+    ports:
+      - "5000:5000"
+      - "9600:9600"
+      - "12201:12201/udp"
+    volumes:
+      - ./keycloak/logstash/pipelines:/usr/share/logstash/pipeline
+    depends_on:
+      - elasticsearch
+    restart: always
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.11.2
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+    depends_on:
+      - elasticsearch
+    restart: always
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:3.3.0
+    hostname: kafka-connect
+    container_name: kafka-connect
+    depends_on:
+      - zookeeper-container
+      - kafka-broker
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: 'kafka-broker:19092'
+      CONNECT_REST_ADVERTISED_HOST_NAME: connect
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: compose-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_ZOOKEEPER_CONNECT: 'zookeeper-container:2181'
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: 'false'
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: 'false'
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_LOG4J_LOGGERS: org.apache.kafka.connect=DEBUG
+    restart: always
