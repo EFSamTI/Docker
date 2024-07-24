@@ -102,6 +102,7 @@ services:
       OIDC_TRUST_STORE_PWD: ${OIDC_TRUST_STORE_PWD}
       CERT_FILE: ${CERT_FILE}
       CERT_KEY: ${CERT_KEY}
+      KAFKA_BOOTSTRAP_SERVER: kafka-broker:19092
     depends_on:
       - kafka-broker
       - keycloak
@@ -132,6 +133,7 @@ services:
       OIDC_TRUST_STORE_PWD: ${OIDC_TRUST_STORE_PWD}
       CERT_FILE: ${CERT_FILE}
       CERT_KEY: ${CERT_KEY}
+      KAFKA_BOOTSTRAP_SERVER: kafka-broker:19092
     depends_on:
       - kafka-broker
       - keycloak
@@ -148,6 +150,7 @@ services:
       PG_USERNAME: ${PG_USERNAME}
       PG_PASSWORD: ${PG_PASSWORD}
       PG_URL: ${PG_URL}
+      KAFKA_BOOTSTRAP_SERVER: kafka-broker:19092
     depends_on:
       - kafka-broker
     restart: unless-stopped
@@ -159,6 +162,8 @@ services:
       dockerfile: dummy/Dockerfile.jvm
     ports:
       - "8093:8093"
+    environment:
+      KAFKA_BOOTSTRAP_SERVER: kafka-broker:19092
     depends_on:
       - kafka-broker
     restart: unless-stopped
