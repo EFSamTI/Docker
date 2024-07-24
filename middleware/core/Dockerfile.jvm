@@ -4,14 +4,14 @@ ENV LANGUAGE='en_US:en'
 ENV TZ America/Guayaquil
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
-COPY --chown=185 quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 quarkus-app/*.jar /deployments/
-COPY --chown=185 quarkus-app/app/ /deployments/app/
-COPY --chown=185 quarkus-app/quarkus/ /deployments/quarkus/
+COPY --chown=185 core/quarkus-app/lib/ /deployments/lib/
+COPY --chown=185 core/quarkus-app/*.jar /deployments/
+COPY --chown=185 core/quarkus-app/app/ /deployments/app/
+COPY --chown=185 core/quarkus-app/quarkus/ /deployments/quarkus/
 
-COPY --chown=185 ../certs/eurofish_com_ec.pfx /deployments/certs/
-COPY --chown=185 ../certs/eurofish_com_ec.pem /deployments/certs/
-COPY --chown=185 ../certs/eurofish.key /deployments/certs/
+COPY --chown=185 certs/eurofish_com_ec.pfx /deployments/certs/
+COPY --chown=185 certs/eurofish_com_ec.pem /deployments/certs/
+COPY --chown=185 certs/eurofish.key /deployments/certs/
 
 EXPOSE 8090
 EXPOSE 8490

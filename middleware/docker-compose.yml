@@ -50,7 +50,8 @@ services:
   keycloak:
     container_name: identity
     build:
-      context: keycloak
+      context: .
+      dockerfile: keycloak/Dockerfile
       args:
         - KC_VERSION=${KC_VERSION}
     command: [ "start", "--import-realm", "--optimized" ]
@@ -83,8 +84,8 @@ services:
   entities:
     container_name: entities
     build:
-      context: entities
-      dockerfile: Dockerfile.jvm
+      context: .
+      dockerfile: entities/Dockerfile.jvm
     ports:
       - "8091:8091"
       - "8491:8491"
@@ -109,8 +110,8 @@ services:
   core:
     container_name: middleware
     build:
-      context: core
-      dockerfile: Dockerfile.jvm
+      context: .
+      dockerfile: core/Dockerfile.jvm
     ports:
       - "8090:8090"
       - "8490:8490"
@@ -139,7 +140,8 @@ services:
   dynamic-view:
     container_name: inventory
     build:
-      context: inventory
+      context: .
+      dockerfile: inventory/Dockerfile
     ports:
       - "8002:8002"
     environment:
@@ -153,8 +155,8 @@ services:
   dummy:
     container_name: for-dummies
     build:
-      context: dummy
-      dockerfile: Dockerfile.jvm
+      context: .
+      dockerfile: dummy/Dockerfile.jvm
     ports:
       - "8093:8093"
     depends_on:

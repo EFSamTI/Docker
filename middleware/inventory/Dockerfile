@@ -4,10 +4,10 @@ ENV LANGUAGE='en_US:en'
 ENV TZ America/Guayaquil
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
-COPY --chown=185 quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 quarkus-app/*.jar /deployments/
-COPY --chown=185 quarkus-app/app/ /deployments/app/
-COPY --chown=185 quarkus-app/quarkus/ /deployments/quarkus/
+COPY --chown=185 inventory/quarkus-app/lib/ /deployments/lib/
+COPY --chown=185 inventory/quarkus-app/*.jar /deployments/
+COPY --chown=185 inventory/quarkus-app/app/ /deployments/app/
+COPY --chown=185 inventory/quarkus-app/quarkus/ /deployments/quarkus/
 
 # USER 0
 # RUN mkdir -p /var/log/inventory
