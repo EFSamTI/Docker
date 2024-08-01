@@ -90,9 +90,9 @@ services:
       - "8091:8091"
       - "8491:8491"
     environment:
-      PG_URL: ${PG_URL}
-      PG_USER: ${PG_USER}
-      PG_PWD: ${PG_PWD}
+      MW_PG_URL: ${MW_PG_URL}
+      MW_PG_USERNAME: ${MW_PG_USERNAME}
+      MW_PG_PASSWORD: ${MW_PG_PASSWORD}
       MONGO_URL: ${MONGO_URL}
       MONGO_DB: ${MONGO_DB}
       OIDC_SERVER_URL: ${OIDC_SERVER_URL}
@@ -114,30 +114,27 @@ services:
     container_name: middleware
     build:
       context: .
-      dockerfile: core/Dockerfile.jvm
+      dockerfile: core/Dockerfile
     ports:
-      - "8090:8090"
       - "8490:8490"
     environment:
-      PG_URL: ${PG_URL}
-      PG_USER: ${PG_USER}
-      PG_PWD: ${PG_PWD}
-      MONGO_URL: ${MONGO_URL}
-      MONGO_DB: ${MONGO_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE}
+      MW_PG_USERNAME: ${MW_PG_USERNAME}
+      MW_PG_PASSWORD: ${MW_PG_PASSWORD}
       MQTT_HOST: ${MQTT_HOST}
       MQTT_PORT: ${MQTT_PORT}
       MQTT_USER: ${MQTT_USER}
       MQTT_PASSWD: ${MQTT_PASSWD}
+      ELK_HOST: ${ELK_HOST}
+      ELK_PORT: ${ELK_PORT}
       OIDC_SERVER_URL: ${OIDC_SERVER_URL}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
       OIDC_TRUST_STORE_FILE: ${OIDC_TRUST_STORE_FILE}
       OIDC_TRUST_STORE_PWD: ${OIDC_TRUST_STORE_PWD}
-      CERT_FILE: ${CERT_FILE}
-      CERT_KEY: ${CERT_KEY}
-      KAFKA_BOOTSTRAP_SERVER: kafka-broker:19092
-      ELK_HOST: ${ELK_HOST}
-      ELK_PORT: ${ELK_PORT}
+      KAFKA_BOOTSTRAP_SERVER: kafka-broker:9092
     depends_on:
       - kafka-broker
       - keycloak
@@ -155,8 +152,8 @@ services:
       PG_PASSWORD: ${PG_PASSWORD}
       PG_URL: ${PG_URL}
       KAFKA_BOOTSTRAP_SERVER: kafka-broker:19092
-      ELK_HOST: ${ELK_HOST}
-      ELK_PORT: ${ELK_PORT}
+      ELK_HOST: logstash
+      ELK_PORT: 12201
     depends_on:
       - kafka-broker
     restart: unless-stopped
