@@ -3,6 +3,7 @@ FROM eclipse-mosquitto:${MOSQUITTO_VERSION}
 
 COPY mosquitto.conf /mosquitto/config/mosquitto.conf
 COPY docker-entrypoint.sh /
+COPY certs /mosquitto/config/certs/
 
 ENV TZ America/Guayaquil
 
